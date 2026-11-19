@@ -29,6 +29,24 @@ the notebooks' outputs.
 | Validation images | 1,500 IDD + 1,072 Indian video + 246 Nepali | ~1,212 Kathmandu valley + 246 Nepali + ~24 distant |
 | Epochs / cap | up to 60 / 5 h | up to 60 / 3 h |
 | Output | `vehicles_best.pt`, `vehicles_per_source.csv` | `plates_best.pt`, `plates_per_source.csv` |
-| Results | *pending* | *pending* |
+| Results | *pending* | see below |
 
-Results are added here, copied from the notebooks' `*_per_source.csv`, when the runs finish.
+### Plates, run 1 result
+
+67 epochs, about 2.2 hours (Kaggle GPU). Per-source validation (`results/plates_run1/plates_per_source.csv`):
+
+| Validation source | Images | mAP50 | mAP50-95 |
+|---|---|---|---|
+| Kathmandu-valley plates | 1,211 | 0.993 | 0.934 |
+| Nepali bike-and-car photos | 246 | 0.970 | 0.560 |
+| Distant plates (Indian traffic video) | 24 | 0.890 | 0.436 |
+
+How to read it:
+
+- **Finding plates works well** (mAP50, a box overlapping the plate by at least half: 0.89-0.99).
+- **Tight boxes are weaker on small and distant plates** (mAP50-95 0.44-0.56). A junction camera sees plates small and far, so this is the number that matters for reading them, and it is the weakest.
+- **The Kathmandu score is likely optimistic.** Its validation images were split at random from the same capture sessions as training, so near-identical frames can be on both sides.
+- **24 distant plates is too few** for a reliable number.
+- Not yet tested on footage from a Kathmandu junction camera.
+
+Weights (`plates_best.pt`, 19 MB) are the notebook output and are not committed.

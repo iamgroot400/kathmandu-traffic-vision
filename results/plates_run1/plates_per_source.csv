@@ -1,0 +1,4 @@
+source,images,mAP50,mAP50-95,AP50 plate
+kathmandu,1211,0.993,0.934,0.993
+nepal,246,0.97,0.56,0.97
+far_plates,24,0.89,0.436,0.89
