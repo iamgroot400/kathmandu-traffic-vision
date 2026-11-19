@@ -1,0 +1,27 @@
+{
+ "id": "aashikkhatri/kathmandu-traffic-vision-dataset-inspection",
+ "title": "Kathmandu traffic vision - dataset inspection",
+ "code_file": "notebook.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": false,
+ "enable_tpu": false,
+ "enable_internet": false,
+ "dataset_sources": [
+  "redzapdos123/indian-driving-dataset-detections-yolov11",
+  "daudshah/vehicle-detection-dataset",
+  "kshitizgajurel042/nepali-bike-and-car-images-with-annotations",
+  "sdevkota007/vehicles-nepal",
+  "ishworsubedii/vehicle-number-plate-datasetnepal",
+  "kshitizgajurel042/images-of-nepali-license-plate",
+  "utsavbaral007/nepal-embossed-number-plate-dataset",
+  "kritizsapkota/number-plates",
+  "deepakat002/indian-vehicle-number-plate-yolo-annotation",
+  "inspiring-lab/nepali-vehicles-number-plate-dataset",
+  "inspiring-lab/nepali-number-plate-characters-dataset",
+  "theciceerguy/embossed-number-plate-detection-nepal-dataset"
+ ],
+ "competition_sources": [],
+ "kernel_sources": []
+}

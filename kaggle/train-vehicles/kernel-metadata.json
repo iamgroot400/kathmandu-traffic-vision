@@ -1,0 +1,20 @@
+{
+ "id": "aashikkhatri/kathmandu-traffic-vision-train-vehicles",
+ "title": "Kathmandu traffic vision - train vehicles",
+ "code_file": "notebook.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": true,
+ "enable_tpu": false,
+ "enable_internet": true,
+ "competition_sources": [],
+ "kernel_sources": [],
+ "dataset_sources": [
+  "redzapdos123/indian-driving-dataset-detections-yolov11",
+  "daudshah/vehicle-detection-dataset",
+  "kshitizgajurel042/nepali-bike-and-car-images-with-annotations",
+  "ishworsubedii/vehicle-number-plate-datasetnepal",
+  "deepakat002/indian-vehicle-number-plate-yolo-annotation"
+ ]
+}

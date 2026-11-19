@@ -1,0 +1,308 @@
+total 12
+drwxr-xr-x  3 root root 4096 Nov 19 08:39 .
+drwxr-xr-x  8 root root 4096 Nov 19 08:41 ..
+drwxr-xr-x 12 root root 4096 Nov 19 08:41 datasets
+
+====================================================================================================
+/kaggle/input/datasets/daudshah/vehicle-detection-dataset
+files by type: {'.txt': 9442, '.jpg': 9440, '.yaml': 1}
+images: 9440
+folders (files directly inside, depth <= 3):
+         3  .
+       812  test/images
+       812  test/labels
+      7556  train/images
+      7556  train/labels
+      1072  valid/images
+      1072  valid/labels
+--- /kaggle/input/datasets/daudshah/vehicle-detection-dataset/README.dataset.txt
+# ai-traffic-system > 2025-05-29 9:56pm
+https://universe.roboflow.com/object-detection-sn8ac/ai-traffic-system
+
+Provided by a Roboflow user
+License: CC BY 4.0
+
+This is a vehicle detection model that detects ten types of vehicles.
+--- /kaggle/input/datasets/daudshah/vehicle-detection-dataset/README.roboflow.txt
+
+ai-traffic-system - v1 2025-05-29 9:56pm
+==============================
+
+This dataset was exported via roboflow.com on May 29, 2025 at 4:59 PM GMT
+
+Roboflow is an end-to-end computer vision platform that helps you
+* collaborate with your team on computer vision projects
+* collect & organize images
+* understand and search unstructured image data
+* annotate, and create datasets
+* export, train, and deploy computer vision models
+* use active learning to improve your dataset over time
+
+For state of the art Computer Vision training notebooks you can use with this dataset,
+visit https://github.com/roboflow/notebooks
+
+To find over 100k other datasets and pre-trained models, visit https://universe.roboflow.com
+
+The dataset includes 9440 images.
+Quitcore-objects are annotated in YOLOv11 format.
+
+The following pre-processing was applied to each image:
+* Resize to 640x640 (Stretch)
+
+No image augmentation techniques were applied.
+
+
+
+--- /kaggle/input/datasets/daudshah/vehicle-detection-dataset/data.yaml
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 7
+names: ['bicycle', 'bus', 'car', 'motorbike', 'rickshaw', 'truck', 'van']
+
+roboflow:
+  workspace: object-detection-sn8ac
+  project: ai-traffic-system
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/object-detection-sn8ac/ai-traffic-system/dataset/1
+YOLO class ids in first 4000 label files: {0: 61, 1: 841, 2: 7647, 3: 878, 4: 222, 5: 339, 6: 709}
+sample label /kaggle/input/datasets/daudshah/vehicle-detection-dataset/test/labels/15-minutes-of-heavy-traffic-noise-in-India-14-08-2022_mp4-0031_jpg.rf.44d6f4fbff710a3b68776f10c3c1f6e6.txt ['2 0.7921875 0.225 0.2625 0.45', '4 0.9609375 0.3484375 0.078125 0.55859375']
+
+====================================================================================================
+/kaggle/input/datasets/deepakat002/indian-vehicle-number-plate-yolo-annotation
+files by type: {'.txt': 161, '.jpg': 160}
+images: 160
+folders (files directly inside, depth <= 3):
+         1  .
+        86  vid-1
+       134  vid-2
+       100  vid-3
+--- /kaggle/input/datasets/deepakat002/indian-vehicle-number-plate-yolo-annotation/classes.txt
+number_plate
+
+YOLO class ids in first 160 label files: {0: 261}
+sample label /kaggle/input/datasets/deepakat002/indian-vehicle-number-plate-yolo-annotation/vid-1/frame-1235.txt ['0 0.440365 0.659259 0.051562 0.025926', '']
+
+====================================================================================================
+/kaggle/input/datasets/inspiring-lab/nepali-number-plate-characters-dataset
+files by type: {'.jpg': 26537}
+images: 26537
+folders (files directly inside, depth <= 3):
+       782  character_ocr/क
+      1000  character_ocr/को
+       845  character_ocr/ख
+       922  character_ocr/ग
+      1000  character_ocr/च
+      1000  character_ocr/ज
+       817  character_ocr/झ
+       551  character_ocr/ञ
+       642  character_ocr/डि
+       789  character_ocr/त
+      1000  character_ocr/ना
+       999  character_ocr/प
+       586  character_ocr/प्र
+       169  character_ocr/ब
+       902  character_ocr/बा
+       768  character_ocr/भे
+       838  character_ocr/म
+       894  character_ocr/मे
+       845  character_ocr/य
+      1000  character_ocr/लु
+       768  character_ocr/सी
+       593  character_ocr/सु
+       866  character_ocr/से
+       375  character_ocr/ह
+       551  character_ocr/०
+
+====================================================================================================
+/kaggle/input/datasets/inspiring-lab/nepali-vehicles-number-plate-dataset
+files by type: {'.txt': 2504, '.jpg': 2503}
+images: 2503
+folders (files directly inside, depth <= 3):
+         1  open_source_nepali_plates
+      2503  open_source_nepali_plates/images
+      2503  open_source_nepali_plates/labels
+YOLO class ids in first 2504 label files: {0: 19324}
+sample label /kaggle/input/datasets/inspiring-lab/nepali-vehicles-number-plate-dataset/open_source_nepali_plates/labels.txt ['character']
+
+====================================================================================================
+/kaggle/input/datasets/ishworsubedii/vehicle-number-plate-datasetnepal
+files by type: {'.jpg': 8078, '.txt': 8078}
+images: 8078
+folders (files directly inside, depth <= 3):
+      8078  vehicle_number_plate_detection/images
+      8078  vehicle_number_plate_detection/labels
+YOLO class ids in first 4000 label files: {0: 4330}
+sample label /kaggle/input/datasets/ishworsubedii/vehicle-number-plate-datasetnepal/vehicle_number_plate_detection/labels/2024-03-08_1002_0.txt ['0 0.5086771916963694 0.41577595891179264 0.2718135924807278 0.06956906705289273', '']
+
+====================================================================================================
+/kaggle/input/datasets/kritizsapkota/number-plates
+files by type: {'.jpg': 225, '.jpeg': 6, '.png': 2}
+images: 233
+folders (files directly inside, depth <= 3):
+       233  .
+
+====================================================================================================
+/kaggle/input/datasets/kshitizgajurel042/images-of-nepali-license-plate
+files by type: {'.jpg': 463, '.png': 1}
+images: 464
+folders (files directly inside, depth <= 3):
+       464  License Characters
+
+====================================================================================================
+/kaggle/input/datasets/kshitizgajurel042/nepali-bike-and-car-images-with-annotations
+files by type: {'.txt': 1054, '.jpg': 1052}
+images: 1052
+folders (files directly inside, depth <= 3):
+       806  Final Data/images/train
+       246  Final Data/images/val
+       807  Final Data/labels/train
+       247  Final Data/labels/val
+--- /kaggle/input/datasets/kshitizgajurel042/nepali-bike-and-car-images-with-annotations/Final Data/labels/train/classes.txt
+car
+license_plate
+bike
+
+--- /kaggle/input/datasets/kshitizgajurel042/nepali-bike-and-car-images-with-annotations/Final Data/labels/val/classes.txt
+car
+license_plate
+bike
+
+YOLO class ids in first 1052 label files: {0: 567, 1: 1052, 2: 534}
+sample label /kaggle/input/datasets/kshitizgajurel042/nepali-bike-and-car-images-with-annotations/Final Data/labels/train/Biketrain1.txt ['2 0.517602 0.536742 0.556578 0.812203', '1 0.525820 0.459273 0.281922 0.093891', '']
+
+====================================================================================================
+/kaggle/input/datasets/redzapdos123/indian-driving-dataset-detections-yolov11
+files by type: {'.jpg': 41962, '.txt': 41962, '.md': 2, '.yaml': 1}
+images: 41962
+folders (files directly inside, depth <= 3):
+         3  IDDDetectionsYOLODataset
+      4197  IDDDetectionsYOLODataset/test/images
+      4197  IDDDetectionsYOLODataset/test/labels
+     33569  IDDDetectionsYOLODataset/train/images
+     33569  IDDDetectionsYOLODataset/train/labels
+      4196  IDDDetectionsYOLODataset/val/images
+      4196  IDDDetectionsYOLODataset/val/labels
+--- /kaggle/input/datasets/redzapdos123/indian-driving-dataset-detections-yolov11/IDDDetectionsYOLODataset/ReadMe.md
+# Indian Driving Dataset-Detections (IDD-D): YOLOv11 Format.
+
+[![License](https://img.shields.io/badge/License-Research%20Use%20Only-lightgrey.svg)](https://idd.insaan.iiit.ac.in/dataset/details/)
+[![YOLOv11 Format](https://img.shields.io/badge/Format-YOLOv11-%2344aa11)](https://ultralytics.com)
+[![Paper](https://img.shields.io/badge/paper-arXiv-B31B1B.svg)](https://arxiv.org/abs/1811.10244)
+
+This repository contains the **[Indian Driving Dataset (IDD)](https://idd.insaan.iiit.ac.in/)**, restructured and converted into the YOLOv11 format for object detection. This version was created to facilitate training and benchmarking object detection models on road scenes from India, which feature unique vehicle types and challenging traffic conditions.
+
+---
+
+## Dataset Overview:
+- **Purpose**: To provide a high quality, large scale dataset for training and evaluating object detection models (like YOLOv11) specifically on Indian roads.
+- **Key Features**:
+  - **Diverse Classes**: Includes object classes common in India, such as `autorickshaw`, `rider`, and `animal`.
+  - **Challenging Scenarios**: Captures a wide variety of scenes, including varying weather, lighting conditions, and heavy traffic.
+  - **Cleaned and Restructured**: The dataset has been cleaned and organized for seamless integration with modern YOLO based training pipelines.
+  - **Standardized Splits**: The data is split into training, validation, and test sets following an 8:1:1 ratio.
+
+---
+
+## Dataset Details:
+### Source
+--- /kaggle/input/datasets/redzapdos123/indian-driving-dataset-detections-yolov11/IDDDetectionsYOLODataset/data.yaml
+#Dataset Configurations.
+path: IDDDetectionsYOLODataset/
+
+names:
+- animal
+- autorickshaw
+- bicycle
+- bus
+- car
+- caravan
+- motorcycle
+- person
+- rider
+- traffic light
+- traffic sign
+- trailer
+- train
+- truck
+- vehicle fallback
+nc: 15
+test: test/images
+train: train/images
+val: val/images
+
+YOLO class ids in first 4000 label files: {0: 494, 1: 3183, 2: 280, 3: 1777, 4: 8455, 5: 9, 6: 9024, 7: 7128, 8: 8387, 9: 342, 10: 1351, 11: 3, 12: 6, 13: 2521, 14: 1946}
+sample label /kaggle/input/datasets/redzapdos123/indian-driving-dataset-detections-yolov11/IDDDetectionsYOLODataset/test/labels/15-07-18-upload_0001999.txt ['13 0.476172 0.474306 0.013281 0.029167', '4 0.471484 0.485417 0.008594 0.023611', '4 0.465234 0.488194 0.017969 0.026389']
+
+====================================================================================================
+/kaggle/input/datasets/sdevkota007/vehicles-nepal
+files by type: {'.jpg': 5797}
+images: 5797
+folders (files directly inside, depth <= 3):
+      1823  VehiclesNepal/2wheelers
+      2974  VehiclesNepal/4wheelers
+      1000  VehiclesNepal1
+
+====================================================================================================
+/kaggle/input/datasets/theciceerguy/embossed-number-plate-detection-nepal-dataset
+files by type: {'.png': 10158}
+images: 10158
+folders (files directly inside, depth <= 3):
+      6566  digits_and_numbers_dataset/augmented
+        24  digits_and_numbers_dataset/test/0
+        23  digits_and_numbers_dataset/test/1
+        21  digits_and_numbers_dataset/test/2
+        22  digits_and_numbers_dataset/test/3
+        21  digits_and_numbers_dataset/test/4
+        21  digits_and_numbers_dataset/test/5
+        23  digits_and_numbers_dataset/test/6
+        22  digits_and_numbers_dataset/test/7
+        18  digits_and_numbers_dataset/test/8
+        21  digits_and_numbers_dataset/test/9
+        19  digits_and_numbers_dataset/test/A
+        15  digits_and_numbers_dataset/test/B
+        21  digits_and_numbers_dataset/test/C
+        19  digits_and_numbers_dataset/test/D
+        21  digits_and_numbers_dataset/test/E
+        19  digits_and_numbers_dataset/test/F
+        25  digits_and_numbers_dataset/test/G
+        23  digits_and_numbers_dataset/test/H
+         8  digits_and_numbers_dataset/test/J
+        20  digits_and_numbers_dataset/test/K
+        13  digits_and_numbers_dataset/test/L
+        18  digits_and_numbers_dataset/test/M
+        18  digits_and_numbers_dataset/test/N
+        14  digits_and_numbers_dataset/test/Nepali Flag
+
+====================================================================================================
+/kaggle/input/datasets/utsavbaral007/nepal-embossed-number-plate-dataset
+files by type: {'.png': 3592}
+images: 3592
+folders (files directly inside, depth <= 3):
+        24  digits_and_numbers_dataset/test/0
+        23  digits_and_numbers_dataset/test/1
+        21  digits_and_numbers_dataset/test/2
+        22  digits_and_numbers_dataset/test/3
+        21  digits_and_numbers_dataset/test/4
+        21  digits_and_numbers_dataset/test/5
+        23  digits_and_numbers_dataset/test/6
+        22  digits_and_numbers_dataset/test/7
+        18  digits_and_numbers_dataset/test/8
+        21  digits_and_numbers_dataset/test/9
+        19  digits_and_numbers_dataset/test/A
+        15  digits_and_numbers_dataset/test/B
+        21  digits_and_numbers_dataset/test/C
+        19  digits_and_numbers_dataset/test/D
+        21  digits_and_numbers_dataset/test/E
+        19  digits_and_numbers_dataset/test/F
+        25  digits_and_numbers_dataset/test/G
+        23  digits_and_numbers_dataset/test/H
+         8  digits_and_numbers_dataset/test/J
+        20  digits_and_numbers_dataset/test/K
+        13  digits_and_numbers_dataset/test/L
+        18  digits_and_numbers_dataset/test/M
+        18  digits_and_numbers_dataset/test/N
+        14  digits_and_numbers_dataset/test/Nepali Flag
+        19  digits_and_numbers_dataset/test/P

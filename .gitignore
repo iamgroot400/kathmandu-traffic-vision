@@ -1,0 +1,12 @@
+__pycache__/
+.venv/
+out/
+*.pt
+*.engine
+*.onnx
+*.mp4
+*.avi
+*.log
+config.json
+kaggle/*/output/
+results/*/runs/
