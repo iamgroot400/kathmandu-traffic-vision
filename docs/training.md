@@ -29,7 +29,28 @@ the notebooks' outputs.
 | Validation images | 1,500 IDD + 1,072 Indian video + 246 Nepali | ~1,212 Kathmandu valley + 246 Nepali + ~24 distant |
 | Epochs / cap | up to 60 / 5 h | up to 60 / 3 h |
 | Output | `vehicles_best.pt`, `vehicles_per_source.csv` | `plates_best.pt`, `plates_per_source.csv` |
-| Results | *pending* | see below |
+| Results | see below | see below |
+
+### Vehicles, run 1 result
+
+56 epochs, stopped by the 5-hour cap (validation mAP50 had levelled off at 0.695 over the last ~15
+epochs). Per-source validation (`results/vehicles_run1/vehicles_per_source.csv`):
+
+| Validation source | Images | mAP50 | mAP50-95 | AP50 motorcycle | AP50 car | AP50 bus | AP50 truck |
+|---|---|---|---|---|---|---|---|
+| Indian Driving Dataset (IDD) | 1,500 | 0.667 | 0.473 | 0.68 | 0.67 | 0.68 | 0.64 |
+| Indian traffic video | 1,072 | 0.727 | 0.490 | 0.66 | 0.84 | 0.75 | 0.67 |
+| Nepali bike-and-car photos | 246 | 0.910 | 0.703 | 0.95 | 0.87 | – | – |
+
+How to read it:
+
+- **On dense South Asian street scenes the detector finds about two-thirds of vehicles well** (mAP50 0.67-0.73). These scenes are crowded, with many small and partly hidden vehicles, which is close to what a junction camera sees.
+- **The Nepali score (0.91) is not a junction score.** Those are mostly close, single-vehicle photos (291 boxes in 246 images), and they contain no buses or trucks.
+- **Trucks are the weakest class** (AP50 0.64-0.67), which matters for the planned restricted-truck rule.
+- **Counting tolerates this better than the numbers suggest**: a vehicle missed in one frame is usually found in the next as it crosses the line, and the tracker keeps its ID. This still has to be measured on real junction footage.
+- Not yet tested on footage from a Kathmandu junction camera.
+
+Weights (`vehicles_best.pt`, 18 MB) are the notebook output and are not committed.
 
 ### Plates, run 1 result
 
