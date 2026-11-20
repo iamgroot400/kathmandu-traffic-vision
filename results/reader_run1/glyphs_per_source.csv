@@ -1,0 +1,3 @@
+source,crops,top1,most_confused
+devanagari,3980,0.9902,६ -> ३ (5); ३ -> ६ (5); बा -> ना (3); ४ -> ७ (2); प्र -> प (2)
+embossed,922,0.9989,emb_7 -> emb_T (1)

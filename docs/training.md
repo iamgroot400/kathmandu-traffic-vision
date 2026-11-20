@@ -71,3 +71,136 @@ How to read it:
 - Not yet tested on footage from a Kathmandu junction camera.
 
 Weights (`plates_best.pt`, 19 MB) are the notebook output and are not committed.
+
+## Plate reader, run 1 (2026-11-20)
+
+Notebook `kathmandu-traffic-vision-train-plate-reader` v1, built by
+[`kaggle/make_reader.py`](../kaggle/make_reader.py). Two models, chained by [`reader.py`](../reader.py):
+
+| | Character detector | Character classifier |
+|---|---|---|
+| Model | YOLO11s, one class `character` | YOLO11s-cls |
+| Data | 2,503 cropped Nepali plates with character boxes (`inspiring-lab`), random 15% validation | Devanagari crops, one folder per character (`inspiring-lab`, 26,537), random 15% validation; embossed digits, letters and the flag (`theciceerguy`, train 2,670, validation = its valid + test, 922) |
+| Not used | | the embossed set's `augmented/` folder (6,566 files, no labels); `utsavbaral007`'s embossed set (same test folders, a copy) |
+| Size / epochs / cap | 416 px, up to 80 / 1.5 h | 64 px, up to 40 / 1.5 h |
+| Output | `chars_best.pt` | `glyphs_best.pt`, `glyphs_per_source.csv` (top-1 accuracy and the most confused pairs, per source) |
+| Results | see below | see below |
+
+Devanagari and embossed classes are kept apart (`०` and `emb_0` are different classes); the reader
+drops the `emb_` prefix. Reading order (top row left to right, then the bottom row) is rule-based
+and checked by `test_reader.py`.
+
+### Plate reader, run 1 result
+
+Character detector: 92 epochs, 0.36 h (stopped early, no improvement for 15 epochs); best weights on 375
+validation plates: **mAP50 0.993, mAP50-95 0.845, precision 0.984, recall 0.983** (`results/reader_run1/chars_results.csv`).
+
+Character classifier: 56 epochs, 0.41 h (stopped early). Per-source top-1 accuracy
+(`results/reader_run1/glyphs_per_source.csv`):
+
+| Validation source | Crops | Top-1 accuracy | Most confused |
+|---|---|---|---|
+| Devanagari characters | 3,980 | 0.990 | ६ ↔ ३ (5 each way), बा → ना (3), ४ → ७ (2), प्र → प (2) |
+| Embossed digits and letters | 922 | 0.999 | 7 → T (1) |
+
+How to read it:
+
+- **Each stage works well on its own data**: about 98% of characters found (recall 0.983), 99% named correctly.
+- **These are upper bounds.** The Devanagari crops and the plates were split at random, so near-identical
+  crops from the same plate or session can be on both sides. Expect lower on new plates.
+- **Errors compound on a whole plate.** At 99% per character, an 8-character plate is read fully right
+  about 0.99^8 = 92% of the time, before detection misses; distant, blurred junction-camera plates will
+  be worse.
+- **The confusions are the expected look-alikes** (६/३, बा/ना). A plate-format check (zone, lot, number
+  in fixed positions) could catch some of them.
+
+**Plate format check** (`reader.check_plate`, self-checked in `test_reader.py`): a reading is
+marked *ok* or *review* (with the reason). Review if any character's confidence is below 0.6, if
+Devanagari and embossed characters are mixed, or if a Devanagari reading is not letters, digits,
+letters, then 1-4 digits (zone or province, lot, vehicle class, number: बा २ च १२३४). Embossed readings
+are only checked for having both letters and digits; their exact layout is to be confirmed on real
+plates. The check catches missed, extra and misplaced characters, not one look-alike swapped for
+another of the same kind (३ for ६, ना for बा); those show up only as low confidence, if at all.
+**Zone / province code check** (`reader.valid_prefix`): a Devanagari reading must also start with
+one of the 14 old zone codes (मे, को, स, ज, बा, ना, ग, लु, ध, रा, भे, क, से, म) followed by the lot digits,
+or a province prefix (प्रदेश + digit, प्र + digit, बागमतीप्रदेश / बाप्रदेश, बाप्र + digit, and the same for the
+other provinces). The code lists were written from memory and should be confirmed against the
+Department of Transport Management list. Run over the 245 AI readings of the label set, it flagged
+one: Gemini's वाप्र... for P0148 (वा is not a zone).
+Assumed, not yet checked on real plates: that provincial plates read in the same letters-digits
+shape (the classifier has no class for every letter of प्रदेश).
+
+**What cannot be measured yet:** no public dataset gives whole-plate text, so only the two stages
+are scored, not full plates. The character detector is trained only on Devanagari plates; whether it
+finds embossed characters is untested. Both need hand-labelled plates from Kathmandu footage.
+
+## Plate reader, run 2: more character data, and a test on unseen sources (2026-11-20)
+
+Notebook `kathmandu-traffic-vision-plate-reader-run-2` v1. Adds two Devanagari character sets
+(`ishworsubedii`, 2,933 crops; `kshitizgajurel042`, 4,410 crops; see `docs/datasets.md`). Only the
+classifier is retrained; the character detector is unchanged.
+
+**Step 1: the run-1 classifier on sources it never saw** (`results/reader_run2/run1_on_unseen_sources.csv`):
+
+| Unseen source | Crops | Run-1 top-1 accuracy |
+|---|---|---|
+| `ishworsubedii` characters | 2,933 | **0.939** |
+| `kshitizgajurel042` characters | 4,410 | **0.636** |
+
+This is the most realistic number so far: run 1 scored 0.990 on held-out crops of its own sources, but
+0.64-0.94 on crops from other collectors. Weakest folders: ० 39%, च 47%, digits २ ३ ६ 56-58%.
+Two folders were dropped because run 1 mostly disagreed with their name: `ko` (run 1 said मे for
+148 of 266) and `pra` (run 1 said प for 111 of 213). Whether the folder names or run 1 are wrong is
+not known without looking at the images; they are left out rather than guessed.
+
+**Step 2: retrained on all sources** (36 epochs, 0.34 h; `results/reader_run2/glyphs_per_source.csv`):
+
+| Validation source | Crops | Top-1 | Most confused |
+|---|---|---|---|
+| Devanagari (Inspiring Lab) | 3,980 | 0.988 | ३ → ६ (10), ६ → ३ (5), प → प्र (3) |
+| Embossed | 922 | 0.997 | 0 → ० (3) |
+| `ishworsubedii` | 439 | 0.989 | single errors |
+| `kshitizgajurel042` | 589 | 0.985 | च → बा (2) |
+
+How to read it:
+
+- **Same-source scores stay near 99%, but they are optimistic**: the step-1 test shows what happens on a
+  new source. Run 2 has seen three Devanagari collections instead of one, so it should generalise
+  better than run 1, but that is untested until a fourth source (hand-labelled Kathmandu plates).
+- On run 1's own sources run 2 is about the same (0.988 vs 0.990 Devanagari; 0.997 vs 0.999 embossed).
+- Use run 2's `glyphs_best.pt` (in `results/reader_run2/`, not committed) with `reader.py`.
+
+## Plate reader, run 3: real Kathmandu plates, and the first whole-plate test (2026-11-20)
+
+Notebook `kathmandu-traffic-vision-plate-reader-run-3` v1, built by `kaggle/make_reader.py`.
+
+**Data.** 190 plates from the real-photo set (P0151-P0400 of 881 Nepali vehicle photos, CC BY-NC 4.0), read by
+Claude from enlarged crops; 60 too small, blurred or damaged were skipped, not guessed. Two were dropped because
+they are the same vehicle as a test photo (P0200, P0355), leaving 188. These labels are AI readings, not
+hand-checked. Each plate's text is split into written characters (conjuncts kept whole: प्र, ण्ड) and matched
+to the character detector's boxes; a plate is used only if the counts match and the run-2 classifier agrees on
+at least half of the characters it knows. Used: 68 plates (1,593 character crops); character count differed on
+108, looked shifted on 12. New classes: दे, श.
+
+**Classifier.** 45 epochs, 0.43 h. Top-1 on held-out crops: Devanagari 0.989, embossed 0.997, ishworsubedii
+0.998, kshitizgajurel042 0.985, real Kathmandu plates 0.978 (90 crops, split by photo).
+
+**Whole plates.** Test set: 88 of the 150 test photos (P0001-P0150, never trained on) where Gemini and Claude
+read the same text. These labels are PROVISIONAL until the owner's hand labels replace them, and plates two AIs
+agree on are likely the easier ones, so the numbers are probably optimistic.
+
+| Setting (88 provisional test plates) | Whole plate exact | Number part exact | Passes check | Exact among passing |
+|---|---|---|---|---|
+| Run-2 classifier, detector conf 0.25 | 27.3% | 63.6% | 34.1% | 80.0% |
+| Run-3 classifier, detector conf 0.25 | 30.7% | 61.4% | 35.2% | 87.1% |
+| **Run-3 classifier, detector conf 0.55** | **43.2%** | **72.7%** | **51.1%** | **82.2%** |
+
+- **Retraining the classifier barely helped** (27% to 31%, about 3 plates). The errors were mostly readings of
+  the wrong length: the character detector boxed plate bolts and screws as characters (for example an extra ० in front of the zone letter)
+  and missed province words.
+- **The detector threshold did help.** Chosen on the 188 training plates (`labelling/eval_reader.py`; exact match
+  32% at 0.25, 39% at 0.45, 41% at 0.55, 41% at 0.65), then run once on the test plates: 31% to 43%.
+- **When a reading passes the format check it is right about 82-87% of the time**, so the check is a useful
+  filter: about half of the plates can be read with fair confidence, the rest go to a person.
+- Next: the character detector needs real plates with character boxes (bolts as negatives, province words as
+  positives); the 68 aligned plates above are a start.

@@ -46,12 +46,26 @@ plate dataset) would be learned as background.
 | `theciceerguy/embossed-number-plate-detection-nepal-dataset` | 10,158 crops, one folder per digit / letter / flag (embossed plates) |
 | `utsavbaral007/nepal-embossed-number-plate-dataset` | 3,592 crops, same layout (likely overlaps the previous) |
 
+## Added for plate reader run 2 (2026-11-20)
+
+| Dataset | Contents | Licence |
+|---|---|---|
+| `ishworsubedii/nepalese-license-plate-character-dataset` | 2,933 Devanagari character crops in 12 folders with romanised names (0-9, ba, pa) | Apache-2.0 |
+| `kshitizgajurel042/individual-character-images-of-nepali-lp` | 4,410 Devanagari character crops in 17 folders (0-9, ba, cha, kha, ko, me, pa, pra) | MIT |
+
+Folder names are mapped to our classes (0 -> ०, ba -> बा, pa -> प ...); a folder is used only if the
+run-1 classifier, never trained on it, gives the mapped label to most of its crops.
+
 ## Considered and not used
 
 | Dataset | Why not |
 |---|---|
 | `sdevkota007/vehicles-nepal` | 5,797 cropped vehicles (Kathmandu, 2016), no boxes: classification only |
 | `anisha713/vehicle-detection-dataset` | a single 540 KB file |
+| `pankajdawadi/nepali-lp-dataset` | character crops in folders numbered 0-12 with no key to the characters; licence "other" |
+| `nishapokharel/nepali-vehicles-number-plate-dataset` | 927 raw photos, no labels (CC BY-NC 4.0); could become a test set once hand-labelled |
+| `binay07/nepali-vehicle-number-plate-dataset` | 4 GB of raw photos, no labels, licence unknown |
+| GTS.ai "Nepali number plate" pages | resale of the Inspiring Lab sets above, behind a sign-up form |
 | `kritizsapkota/number-plates`, `kshitizgajurel042/images-of-nepali-license-plate` | images without box labels |
 | Kathmandu University set (Roboflow Universe) | could not be inspected (needs a Roboflow account); worth adding |
 | DriveIndia | release not confirmed |

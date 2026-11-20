@@ -1,0 +1,18 @@
+{
+ "id": "aashikkhatri/kathmandu-traffic-vision-train-plate-reader",
+ "title": "Kathmandu traffic vision - train plate reader",
+ "code_file": "notebook.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": true,
+ "enable_tpu": false,
+ "enable_internet": true,
+ "competition_sources": [],
+ "kernel_sources": [],
+ "dataset_sources": [
+  "inspiring-lab/nepali-vehicles-number-plate-dataset",
+  "inspiring-lab/nepali-number-plate-characters-dataset",
+  "theciceerguy/embossed-number-plate-detection-nepal-dataset"
+ ]
+}

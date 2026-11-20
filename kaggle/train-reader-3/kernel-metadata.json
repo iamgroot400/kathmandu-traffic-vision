@@ -1,0 +1,25 @@
+{
+ "id": "aashikkhatri/kathmandu-traffic-vision-plate-reader-run-3",
+ "title": "Kathmandu traffic vision - plate reader run 3",
+ "code_file": "notebook.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": true,
+ "enable_tpu": false,
+ "enable_internet": true,
+ "competition_sources": [],
+ "kernel_sources": [
+  "aashikkhatri/kathmandu-traffic-vision-train-plate-reader",
+  "aashikkhatri/kathmandu-traffic-vision-plate-reader-run-2",
+  "aashikkhatri/kathmandu-traffic-vision-train-plates",
+  "aashikkhatri/kathmandu-traffic-vision-plate-label-set"
+ ],
+ "dataset_sources": [
+  "inspiring-lab/nepali-number-plate-characters-dataset",
+  "theciceerguy/embossed-number-plate-detection-nepal-dataset",
+  "ishworsubedii/nepalese-license-plate-character-dataset",
+  "kshitizgajurel042/individual-character-images-of-nepali-lp",
+  "aashikkhatri/kathmandu-plate-labels"
+ ]
+}

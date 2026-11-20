@@ -22,7 +22,7 @@ From one fixed camera at a signalised junction:
    a direct feed from the signal controller).
 5. **Flags red-light violations**: a vehicle crossing the stop line into the junction while the
    signal has been red for longer than a grace period. Each one is saved as an evidence frame.
-6. **(In training)** finds the vehicle's number plate; reading the characters is the next step.
+6. Finds the vehicle's number plate (detector trained, run 1); reading the characters is the next step.
 
 ```
 camera frame ─► vehicle detector ─► tracker ─► stop-line crossing ─► counts (vehicles, PCU per minute)
@@ -52,7 +52,7 @@ python -m venv .venv
 | `annotated.mp4` | (with `--save-video`) the video with boxes, stop line and signal state |
 
 `--model` takes any Ultralytics detector: the COCO-pretrained `yolo11n.pt` works out of the box; the
-fine-tuned Kathmandu model (`vehicles_best.pt`, see [docs/training.md](docs/training.md)) is the target.
+fine-tuned model (`vehicles_best.pt`, run 1, see [docs/training.md](docs/training.md)) is the one to use.
 
 ## Code
 
@@ -62,6 +62,9 @@ fine-tuned Kathmandu model (`vehicles_best.pt`, see [docs/training.md](docs/trai
 | [`light.py`](light.py) | Signal colour from a box in the frame (HSV), or a fixed timing cycle |
 | [`watch.py`](watch.py) | Runs detector + tracker on a video or camera and writes the outputs |
 | [`test_logic.py`](test_logic.py) | Self-checks with fake vehicles and synthetic frames |
+| [`reader.py`](reader.py) | Plate reader: character boxes -> one label each -> text in reading order (one or two rows) |
+| [`test_reader.py`](test_reader.py) | Self-checks for the reading order (jumbled, two-row and tilted plates) |
+| [`kaggle/make_reader.py`](kaggle/make_reader.py) | Builds the plate-reader training notebook |
 | [`kaggle/make_inspect.py`](kaggle/make_inspect.py) | Builds the dataset-inspection notebook |
 | [`kaggle/make_train.py`](kaggle/make_train.py) | Builds the two training notebooks (vehicles, plates) |
 
@@ -92,8 +95,8 @@ signal are never flagged: a false flag fines an innocent driver, a missed one co
 |---|---|
 | Counting and red-light logic | done, self-checked (`test_logic.py`) |
 | Signal state from camera box / timing cycle | done, checked on synthetic frames |
-| Vehicle detector fine-tuned for Kathmandu | training ([docs/training.md](docs/training.md)) |
-| Plate detector | training |
-| Plate reading (Devanagari and embossed) | datasets identified, not started |
+| Vehicle detector (South Asian traffic data) | run 1 done: mAP50 0.67-0.73 on crowded street scenes ([docs/training.md](docs/training.md)) |
+| Plate detector | run 1 done: mAP50 0.89-0.99; weak on small distant plates (mAP50-95 0.44) |
+| Plate reading (Devanagari and embossed) | run 2 done: characters found 98%; named 99% on held-out crops of known sources, but run 1 named only 64-94% on unseen sources; whole plates not yet measured |
 | Test on real Kathmandu junction footage | **needs footage**: no open Kathmandu junction video exists |
 | Restricted-vehicle rule (trucks on inner roads) | planned |
