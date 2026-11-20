@@ -13,7 +13,7 @@ from pathlib import Path
 import cv2
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from reader import check_plate, read_plate  # noqa: E402
+from reader import check_plate, plate_crop, read_plate  # noqa: E402
 
 ap = argparse.ArgumentParser()
 ap.add_argument("labels"); ap.add_argument("photos")
@@ -29,17 +29,7 @@ lab = {k: v for k, v in (l.split("\t") for l in Path(a.labels).read_text(encodin
 digits = lambda s: (re.findall(r"[०-९]+$", s) or [""])[0]
 
 
-def crop_of(img):
-    b = plates.predict(img, imgsz=1280, conf=0.2, verbose=False)[0].boxes.xyxy.tolist()
-    if not b:
-        return None
-    h, w = img.shape[:2]
-    x1, y1, x2, y2 = min(v[0] for v in b), min(v[1] for v in b), max(v[2] for v in b), max(v[3] for v in b)
-    px, py = (x2 - x1) * 0.08, (y2 - y1) * 0.15
-    return img[int(max(0, y1 - py)):int(min(h, y2 + py)), int(max(0, x1 - px)):int(min(w, x2 + px))]
-
-
-crops = {k: crop_of(cv2.imread(str(Path(a.photos) / f"{k}.jpg"))) for k in lab}
+crops = {k: plate_crop(cv2.imread(str(Path(a.photos) / f"{k}.jpg")), plates) for k in lab}
 for c in a.conf:
     exact = num = passed = passed_exact = 0
     for k, truth in lab.items():

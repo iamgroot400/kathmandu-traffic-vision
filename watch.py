@@ -11,6 +11,9 @@ config.json:
     cycle      {"red": s, "green": s, "amber": s, "offset": s} or null, used when light_roi is null
 Writes out/counts.csv (vehicles and PCU per minute, class, direction), out/violations.csv and
 out/snapshots/<time>_<id>.jpg (evidence frame with the vehicle boxed).
+With --plates, each violation also gets the number plate read (plate), "ok" or "review: why" (plate_check)
+and a close-up photo of the plate (plate_snapshot, out/snapshots/<time>_<id>_plate.jpg).
+Plate numbers are personal data: out/ stays off git; use them only for flagged violations.
 """
 from __future__ import annotations
 
@@ -23,6 +26,7 @@ import cv2
 
 from light import cycle_colour, light_colour
 from logic import PCU, Monitor
+from reader import read_vehicle
 
 VEHICLES = {1: "bicycle", 2: "car", 3: "motorcycle", 5: "bus", 7: "truck"}   # COCO class ids
 COLOUR = {"red": (0, 0, 255), "amber": (0, 200, 255), "green": (0, 200, 0), "unknown": (160, 160, 160)}
@@ -68,6 +72,9 @@ def main() -> None:
     ap.add_argument("--pick", action="store_true", help="set the stop line and light box, then exit")
     ap.add_argument("--save-video", action="store_true")
     ap.add_argument("--show", action="store_true")
+    ap.add_argument("--plates", help="plate detector weights (plates_best.pt); turns on plate reading")
+    ap.add_argument("--chars", default="results/reader_run1/chars_best.pt")
+    ap.add_argument("--glyphs", default="results/reader_run3/glyphs_best.pt")
     a = ap.parse_args()
     if a.pick:
         return pick(a.source, a.config)
@@ -81,11 +88,13 @@ def main() -> None:
     cap.release()
     (a.out / "snapshots").mkdir(parents=True, exist_ok=True)
     writer = None
+    readers = (YOLO(a.plates), YOLO(a.chars), YOLO(a.glyphs)) if a.plates else None
 
     results = YOLO(a.model).track(a.source, stream=True, persist=True, tracker="bytetrack.yaml",
                                   classes=list(VEHICLES), conf=a.conf, verbose=False)
     for i, r in enumerate(results):
         frame, t = r.orig_img, i / fps
+        clean = frame.copy() if readers else None   # plate is read before the boxes are drawn on
         if cfg.get("light_roi"):
             seen = light_colour(frame, cfg["light_roi"])
         elif cfg.get("cycle"):
@@ -109,9 +118,17 @@ def main() -> None:
             cv2.rectangle(frame, (x1, y1), (x2, y2), col, 2)
             cv2.putText(frame, f"{cls} {tid}", (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, col, 1)
         for v in new:
+            if readers:
+                # shortcut: reads one frame (the crossing); best-of-several-frames would read more plates
+                v["plate"], v["plate_check"], crop = read_vehicle(clean, boxes[v["track_id"]], *readers)
+                v["plate_snapshot"] = ""
+                if crop is not None:
+                    v["plate_snapshot"] = str(a.out / "snapshots" / f"{v['time_s']:08.2f}_{v['track_id']}_plate.jpg")
+                    cv2.imwrite(v["plate_snapshot"], crop)
             v["snapshot"] = str(a.out / "snapshots" / f"{v['time_s']:08.2f}_{v['track_id']}.jpg")
             cv2.imwrite(v["snapshot"], frame)
-            print(f"VIOLATION t={v['time_s']}s {v['class']} #{v['track_id']} red for {v['red_for_s']}s")
+            print(f"VIOLATION t={v['time_s']}s {v['class']} #{v['track_id']} red for {v['red_for_s']}s"
+                  + (f"  plate: {v['plate_check']}" if readers else ""))   # plate text stays out of the log
         if a.save_video:
             if writer is None:
                 h, w = frame.shape[:2]
@@ -130,7 +147,8 @@ def main() -> None:
         for (m, cls, d), n in sorted(mon.counts.items()):
             w.writerow([m, cls, d, n, n * PCU[cls]])
     with open(a.out / "violations.csv", "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=["time_s", "track_id", "class", "light", "red_for_s", "snapshot"])
+        w = csv.DictWriter(fh, fieldnames=["time_s", "track_id", "class", "light", "red_for_s", "snapshot"]
+                           + (["plate", "plate_check", "plate_snapshot"] if readers else []))
         w.writeheader()
         w.writerows(mon.violations)
     print(f"{sum(mon.counts.values())} crossings, {len(mon.violations)} violations -> {a.out}")

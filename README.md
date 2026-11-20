@@ -40,6 +40,7 @@ python -m venv .venv
 .venv/Scripts/python test_logic.py                  # decision-logic self-checks, no model needed
 .venv/Scripts/python watch.py --source junction.mp4 --pick        # once: click stop line, box the signal
 .venv/Scripts/python watch.py --source junction.mp4 --save-video  # run
+.venv/Scripts/python watch.py --source junction.mp4 --plates results/plates_run1/plates_best.pt  # + read plates
 ```
 
 `--pick` writes `config.json` for that camera. Outputs go to `out/`:
@@ -47,7 +48,7 @@ python -m venv .venv
 | File | Contents |
 |---|---|
 | `counts.csv` | minute, class, direction (`in` = entering the junction), vehicles, PCU |
-| `violations.csv` | time, track id, class, signal state, seconds since red began, snapshot path |
+| `violations.csv` | time, track id, class, signal state, seconds since red began, snapshot path; with `--plates` also plate text, `ok`/`review: why`, and the plate close-up path |
 | `snapshots/*.jpg` | evidence frame for each violation, vehicle boxed |
 | `annotated.mp4` | (with `--save-video`) the video with boxes, stop line and signal state |
 

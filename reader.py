@@ -110,6 +110,29 @@ def read_plate(plate, chars, glyphs, min_conf: float = 0.55) -> tuple[list[str],
     return [b[4] for b in ordered], min(b[5] for b in ordered)
 
 
+def plate_crop(img, plates, conf: float = 0.2):
+    """Crop the plate out of a photo or vehicle crop, or None. Uses the union of all plate boxes: on close-ups
+    the plate detector splits one plate into pieces. Padded so edge characters are not cut off."""
+    b = plates.predict(img, imgsz=1280, conf=conf, verbose=False)[0].boxes.xyxy.tolist()
+    if not b:
+        return None
+    h, w = img.shape[:2]
+    x1, y1, x2, y2 = min(v[0] for v in b), min(v[1] for v in b), max(v[2] for v in b), max(v[3] for v in b)
+    px, py = (x2 - x1) * 0.08, (y2 - y1) * 0.15
+    return img[int(max(0, y1 - py)):int(min(h, y2 + py)), int(max(0, x1 - px)):int(min(w, x2 + px))]
+
+
+def read_vehicle(frame, box, plates, chars, glyphs) -> tuple[str, str, object]:
+    """(plate text, "ok" or "review: reason", plate crop or None) for the vehicle inside box (x1, y1, x2, y2)."""
+    x1, y1, x2, y2 = (int(v) for v in box[:4])
+    crop = plate_crop(frame[max(0, y1):y2, max(0, x1):x2], plates)
+    if crop is None or crop.size == 0:
+        return "", "review: no plate found", None
+    labels, conf = read_plate(crop, chars, glyphs)
+    ok, why = check_plate(labels, conf)
+    return "".join(labels), "ok" if ok else "review: " + why, crop
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("image")

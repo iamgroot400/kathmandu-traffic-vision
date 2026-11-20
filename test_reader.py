@@ -51,4 +51,25 @@ for good in ["बा२च१२३४", "मे१प२३", "से५प१"
 for bad in ["वाप्र०६००९प१२३४", "ह२प१२३४", "बाच१२३४", "प्रदेशप१२", "x", ""]:
     assert not valid_prefix(bad), bad
 assert not ok(["ह", "२", "च", "१", "२", "३", "४"])          # right shape, unknown zone
+
+# read_vehicle with stand-in models: plate found and read; no plate found
+import numpy as np
+from types import SimpleNamespace as NS
+from reader import read_vehicle
+
+def fake(xyxy=(), names=None, top1=0):
+    res = NS(boxes=NS(xyxy=NS(tolist=lambda: [list(b) for b in xyxy])), names=names, probs=NS(top1=top1, top1conf=0.9))
+    return NS(predict=lambda *a, **k: [res])
+
+frame = np.zeros((400, 600, 3), np.uint8)
+plates = fake([(50, 200, 150, 240)])                               # plate inside the vehicle crop
+chars = fake([(10 + 12 * i, 5, 20 + 12 * i, 30) for i in range(7)])  # 7 characters in one row
+seq = iter("बा२च१२३४")
+glyph_res = lambda: NS(names={0: next(seq)}, probs=NS(top1=0, top1conf=0.9))
+glyphs = NS(predict=lambda *a, **k: [glyph_res()])
+text_, check, crop = read_vehicle(frame, (100, 50, 400, 350), plates, chars, glyphs)
+assert (text_, check) == ("बा२च१२३", "ok"), (text_, check)       # 7 boxes -> first 7 labels, valid layout
+assert crop is not None and crop.shape[0] > 0
+text_, check, crop = read_vehicle(frame, (100, 50, 400, 350), fake([]), chars, glyphs)
+assert (text_, check, crop) == ("", "review: no plate found", None)
 print("all checks pass")
