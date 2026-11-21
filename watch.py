@@ -10,7 +10,9 @@ config.json:
     light_roi  [x, y, w, h] or null  box around the signal head
     cycle      {"red": s, "green": s, "amber": s, "offset": s} or null, used when light_roi is null
 Writes out/counts.csv (vehicles and PCU per minute, class, direction), out/violations.csv and
-out/snapshots/<time>_<id>.jpg (evidence frame with the vehicle boxed).
+out/snapshots/<time>_<id>.jpg (evidence frame with the vehicle boxed), <time>_<id>_vehicle.jpg (close-up of
+the vehicle and its rider or driver), <time>_<id>_card.jpg (frame, close-ups and the facts on one image) and
+out/report.html (every violation with its card, for a person to review).
 With --plates, each violation also gets the number plate read (plate), "ok" or "review: why" (plate_check)
 and a close-up photo of the plate (plate_snapshot, out/snapshots/<time>_<id>_plate.jpg).
 Plate numbers are personal data: out/ stays off git; use them only for flagged violations.
@@ -19,17 +21,66 @@ from __future__ import annotations
 
 import argparse
 import csv
+import html
 import json
 from pathlib import Path
 
 import cv2
+import numpy as np
 
 from light import cycle_colour, light_colour
 from logic import PCU, Monitor
 from reader import read_vehicle
 
-VEHICLES = {1: "bicycle", 2: "car", 3: "motorcycle", 5: "bus", 7: "truck"}   # COCO class ids
 COLOUR = {"red": (0, 0, 255), "amber": (0, 200, 255), "green": (0, 200, 0), "unknown": (160, 160, 160)}
+
+
+def vehicle_crop(frame, box, pad: float = 0.15):
+    """The vehicle with a margin, so a rider's head above the box and the plate below it are kept."""
+    x1, y1, x2, y2 = box[:4]
+    h, w = frame.shape[:2]
+    px, py = (x2 - x1) * pad, (y2 - y1) * pad
+    return frame[int(max(0, y1 - py)):int(min(h, y2 + py)), int(max(0, x1 - px)):int(min(w, x2 + px))].copy()
+
+
+def fit(img, w, h):
+    """img scaled to fit inside w x h, on a dark background of exactly that size."""
+    out = np.full((h, w, 3), 30, np.uint8)
+    if img is None or img.size == 0:
+        return out
+    s = min(w / img.shape[1], h / img.shape[0])
+    r = cv2.resize(img, (max(1, int(img.shape[1] * s)), max(1, int(img.shape[0] * s))))
+    y, x = (h - r.shape[0]) // 2, (w - r.shape[1]) // 2
+    out[y:y + r.shape[0], x:x + r.shape[1]] = r
+    return out
+
+
+def evidence_card(frame, vehicle, plate, lines):
+    """One image per violation: annotated frame on the left, vehicle and plate close-ups on the right, facts below.
+    OpenCV cannot draw Devanagari, so the plate text is in violations.csv and report.html, not on the card."""
+    left = fit(frame, 720, 480)
+    right = np.vstack([fit(vehicle, 360, 320), fit(plate, 360, 160)])
+    card = np.vstack([np.hstack([left, right]), np.full((40 * len(lines) + 10, 1080, 3), 255, np.uint8)])
+    for i, t in enumerate(lines):
+        cv2.putText(card, t, (12, 480 + 35 + 40 * i), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
+    return card
+
+
+def write_report(path: Path, violations) -> None:
+    """A page for a person to review the flags: card, time, class, plate and whether the reading needs checking."""
+    rows = "".join(
+        f"<tr><td><a href='{html.escape(Path(v['card']).relative_to(path.parent).as_posix())}'>"
+        f"<img src='{html.escape(Path(v['card']).relative_to(path.parent).as_posix())}' width='540'></a></td>"
+        f"<td>{v['time_s']} s</td><td>{html.escape(v['class'])}</td><td>{v['red_for_s']} s</td>"
+        f"<td>{html.escape(v.get('plate', '') or '-')}</td><td>{html.escape(v.get('plate_check', 'not read'))}</td></tr>"
+        for v in violations)
+    path.write_text("<!doctype html><meta charset='utf-8'><title>Red-light violations</title>"
+                    "<style>body{font-family:sans-serif;margin:16px}td{padding:6px;border-bottom:1px solid #ccc}</style>"
+                    f"<h1>Red-light violations ({len(violations)})</h1>"
+                    "<p>Flags for a person to review, not automatic fines. Plates marked <i>review</i> need checking "
+                    "against the close-up. Personal data: keep this folder private.</p>"
+                    "<table><tr><th>Evidence</th><th>Time</th><th>Vehicle</th><th>Red for</th><th>Plate</th>"
+                    f"<th>Plate check</th></tr>{rows}</table>", encoding="utf-8")
 
 
 def pick(source: str, cfg_path: Path) -> None:
@@ -65,7 +116,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--source", required=True, help="video file, stream URL, or camera index")
     ap.add_argument("--config", type=Path, default=Path("config.json"))
-    ap.add_argument("--model", default="yolo11n.pt", help="any Ultralytics detector, e.g. yolo12n.pt")
+    ap.add_argument("--model", default="yolo11n.pt", help="any Ultralytics detector, e.g. results/vehicles_run1/vehicles_best.pt")
     ap.add_argument("--grace", type=float, default=1.0, help="seconds after red begins before crossings count")
     ap.add_argument("--conf", type=float, default=0.3)
     ap.add_argument("--out", type=Path, default=Path("out"))
@@ -73,7 +124,7 @@ def main() -> None:
     ap.add_argument("--save-video", action="store_true")
     ap.add_argument("--show", action="store_true")
     ap.add_argument("--plates", help="plate detector weights (plates_best.pt); turns on plate reading")
-    ap.add_argument("--chars", default="results/reader_run1/chars_best.pt")
+    ap.add_argument("--chars", default="results/reader_run4/chars_best.pt")
     ap.add_argument("--glyphs", default="results/reader_run3/glyphs_best.pt")
     a = ap.parse_args()
     if a.pick:
@@ -90,11 +141,12 @@ def main() -> None:
     writer = None
     readers = (YOLO(a.plates), YOLO(a.chars), YOLO(a.glyphs)) if a.plates else None
 
-    results = YOLO(a.model).track(a.source, stream=True, persist=True, tracker="bytetrack.yaml",
-                                  classes=list(VEHICLES), conf=a.conf, verbose=False)
+    det = YOLO(a.model)
+    vehicles = {i: n for i, n in det.names.items() if n in PCU}   # class ids differ between COCO and our own model
+    results = det.track(a.source, stream=True, persist=True, tracker="bytetrack.yaml",
+                        classes=list(vehicles), conf=a.conf, verbose=False)
     for i, r in enumerate(results):
         frame, t = r.orig_img, i / fps
-        clean = frame.copy() if readers else None   # plate is read before the boxes are drawn on
         if cfg.get("light_roi"):
             seen = light_colour(frame, cfg["light_roi"])
         elif cfg.get("cycle"):
@@ -104,9 +156,10 @@ def main() -> None:
         tracks, boxes = [], {}
         if r.boxes.id is not None:
             for (x1, y1, x2, y2), tid, c in zip(r.boxes.xyxy.tolist(), r.boxes.id.int().tolist(), r.boxes.cls.int().tolist()):
-                tracks.append((tid, VEHICLES[c], ((x1 + x2) / 2, y2)))   # bottom centre: where the vehicle meets the road
-                boxes[tid] = (int(x1), int(y1), int(x2), int(y2), VEHICLES[c])
+                tracks.append((tid, vehicles[c], ((x1 + x2) / 2, y2)))   # bottom centre: where the vehicle meets the road
+                boxes[tid] = (int(x1), int(y1), int(x2), int(y2), vehicles[c])
         new = mon.update(t, seen, tracks)
+        clean = frame.copy() if new else None   # close-ups are cut before the boxes are drawn on
 
         light = mon.signal.state
         cv2.line(frame, line[0], line[1], COLOUR[light], 3)
@@ -118,15 +171,24 @@ def main() -> None:
             cv2.rectangle(frame, (x1, y1), (x2, y2), col, 2)
             cv2.putText(frame, f"{cls} {tid}", (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, col, 1)
         for v in new:
+            stem = a.out / "snapshots" / f"{v['time_s']:08.2f}_{v['track_id']}"
+            box = boxes[v["track_id"]]
+            crop = None
             if readers:
                 # shortcut: reads one frame (the crossing); best-of-several-frames would read more plates
-                v["plate"], v["plate_check"], crop = read_vehicle(clean, boxes[v["track_id"]], *readers)
+                v["plate"], v["plate_check"], crop = read_vehicle(clean, box, *readers)
                 v["plate_snapshot"] = ""
                 if crop is not None:
-                    v["plate_snapshot"] = str(a.out / "snapshots" / f"{v['time_s']:08.2f}_{v['track_id']}_plate.jpg")
+                    v["plate_snapshot"] = f"{stem}_plate.jpg"
                     cv2.imwrite(v["plate_snapshot"], crop)
-            v["snapshot"] = str(a.out / "snapshots" / f"{v['time_s']:08.2f}_{v['track_id']}.jpg")
+            v["snapshot"], v["vehicle_snapshot"], v["card"] = f"{stem}.jpg", f"{stem}_vehicle.jpg", f"{stem}_card.jpg"
             cv2.imwrite(v["snapshot"], frame)
+            vehicle = vehicle_crop(clean, box)
+            cv2.imwrite(v["vehicle_snapshot"], vehicle)
+            facts = [f"RED-LIGHT VIOLATION  t={v['time_s']}s  {v['class']} #{v['track_id']}  red for {v['red_for_s']}s"]
+            if readers:
+                facts.append(f"plate: {v['plate_check']}"[:70])   # plate text itself: violations.csv, report.html
+            cv2.imwrite(v["card"], evidence_card(frame, vehicle, crop, facts))
             print(f"VIOLATION t={v['time_s']}s {v['class']} #{v['track_id']} red for {v['red_for_s']}s"
                   + (f"  plate: {v['plate_check']}" if readers else ""))   # plate text stays out of the log
         if a.save_video:
@@ -146,11 +208,12 @@ def main() -> None:
         w.writerow(["minute", "class", "direction", "vehicles", "pcu"])
         for (m, cls, d), n in sorted(mon.counts.items()):
             w.writerow([m, cls, d, n, n * PCU[cls]])
-    with open(a.out / "violations.csv", "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=["time_s", "track_id", "class", "light", "red_for_s", "snapshot"]
+    with open(a.out / "violations.csv", "w", newline="", encoding="utf-8-sig") as fh:
+        w = csv.DictWriter(fh, fieldnames=["time_s", "track_id", "class", "light", "red_for_s", "snapshot", "vehicle_snapshot", "card"]
                            + (["plate", "plate_check", "plate_snapshot"] if readers else []))
         w.writeheader()
         w.writerows(mon.violations)
+    write_report(a.out / "report.html", mon.violations)
     print(f"{sum(mon.counts.values())} crossings, {len(mon.violations)} violations -> {a.out}")
 
 

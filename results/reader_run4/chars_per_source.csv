@@ -1,0 +1,5 @@
+val_source,model,mAP50,precision,recall
+plates_dev,run1,0.993,0.984,0.983
+plates_dev,run4,0.993,0.983,0.983
+kathmandu_real,run1,0.972,0.97,0.917
+kathmandu_real,run4,0.973,0.936,0.944

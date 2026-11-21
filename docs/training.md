@@ -204,3 +204,34 @@ agree on are likely the easier ones, so the numbers are probably optimistic.
   filter: about half of the plates can be read with fair confidence, the rest go to a person.
 - Next: the character detector needs real plates with character boxes (bolts as negatives, province words as
   positives); the 68 aligned plates above are a start.
+
+## Plate reader, run 4: the character detector on real plates (2026-11-21)
+
+Notebook `kathmandu-traffic-vision-plate-reader-run-4` v1, built by `kaggle/make_reader.py`. Weights:
+`results/reader_run4/chars_best.pt` (not in git), now the default in `watch.py` and `reader.py` (threshold 0.65).
+
+**Data.** Character boxes for real plates come from the 188 AI-read training plates (P0151-P0400). The run-1
+detector proposes candidates at a low threshold (0.05); an in-order dynamic-programming match keeps one box per
+written character, scored by the run-3 classifier. Candidates left over (bolts, screws, dirt) get no label and
+train as background. A plate is skipped if two characters land on one box or the classifier disagrees with the
+reading on more than 40% of the characters it knows. Used: 115 plates (1,102 character boxes, 317 background
+candidates); skipped: 49 classifier disagrees, 24 fewer candidates than characters (mostly province words the
+detector never proposes, which this method cannot teach). Split by photo: 92 train (x4 weight), 23 held out.
+
+**Detector.** Fine-tuned from run 1 together with the 2,503 web plates. Held-out web plates: unchanged (mAP50
+0.993). Held-out real plates: recall 0.917 to 0.944, precision 0.970 to 0.936, mAP50 0.972 to 0.973.
+
+**Whole plates.** Threshold chosen on the 23 held-out training photos (exact 43% at 0.25, 57% at 0.35-0.45,
+61% at 0.55 and 0.65; tie broken to 0.65). Test set: 112 of the 150 test photos, run once. These labels are AI
+readings (88 where Gemini and Claude agree, 24 more settled by Claude from enlarged crops; 38 unreadable,
+ambiguous or multi-plate photos left out), not hand-checked, and they leave out the hardest plates.
+
+| Detector (112 AI-labelled test plates, run-3 classifier) | Whole plate exact | Number part exact | Passes check | Exact among passing |
+|---|---|---|---|---|
+| Run 1, conf 0.55 | 41.1% | 72.3% | 47.3% | 84.9% |
+| **Run 4, conf 0.65** | **43.8%** | **75.9%** | 47.3% | **88.7%** |
+
+- A small gain: 3 more plates read exactly out of 112, which could be chance. The clearer change is that a
+  reading passing the check is right 89% of the time instead of 85%.
+- Next: plates where a character gets no candidate at all need hand-drawn boxes or more real plates.
+

@@ -18,9 +18,9 @@ from reader import check_plate, plate_crop, read_plate  # noqa: E402
 ap = argparse.ArgumentParser()
 ap.add_argument("labels"); ap.add_argument("photos")
 ap.add_argument("--plates", default="results/plates_run1/plates_best.pt")
-ap.add_argument("--chars", default="results/reader_run1/chars_best.pt")
+ap.add_argument("--chars", default="results/reader_run4/chars_best.pt")
 ap.add_argument("--glyphs", default="results/reader_run3/glyphs_best.pt")
-ap.add_argument("--conf", type=float, nargs="+", default=[0.25])
+ap.add_argument("--conf", type=float, nargs="+", default=[0.65])
 a = ap.parse_args()
 
 from ultralytics import YOLO  # noqa: E402

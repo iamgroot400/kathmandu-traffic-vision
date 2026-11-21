@@ -89,11 +89,11 @@ def check_plate(labels: list[str], conf: float, min_conf: float = 0.6) -> tuple[
     return True, "ok"
 
 
-def read_plate(plate, chars, glyphs, min_conf: float = 0.55) -> tuple[list[str], float]:
+def read_plate(plate, chars, glyphs, min_conf: float = 0.65) -> tuple[list[str], float]:
     """Character labels in reading order, and the lowest confidence (a weak link makes the whole reading weak).
 
-    min_conf 0.55: chosen on the 188 training plates (labelling/eval_reader.py); at the old 0.25 the character
-    detector also boxed plate bolts and screws as characters.
+    min_conf 0.65: chosen for the run-4 character detector on held-out training photos (tied with 0.55). The
+    run-1 detector was best at 0.55; at 0.25 it boxed plate bolts and screws as characters.
     """
     boxes = []
     for x1, y1, x2, y2 in chars.predict(plate, imgsz=416, conf=min_conf, verbose=False)[0].boxes.xyxy.tolist():

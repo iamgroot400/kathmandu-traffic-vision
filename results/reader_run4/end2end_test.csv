@@ -1,0 +1,3 @@
+detector,exact,number,pass_check,exact_among_passing,n
+run1 @0.55,0.411,0.723,0.473,0.849,112
+run4 @0.65,0.438,0.759,0.473,0.887,112
