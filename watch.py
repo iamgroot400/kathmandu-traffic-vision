@@ -11,8 +11,8 @@ config.json:
     cycle      {"red": s, "green": s, "amber": s, "offset": s} or null, used when light_roi is null
 Writes out/counts.csv (vehicles and PCU per minute, class, direction), out/violations.csv and
 out/snapshots/<time>_<id>.jpg (evidence frame with the vehicle boxed), <time>_<id>_vehicle.jpg (close-up of
-the vehicle and its rider or driver), <time>_<id>_before1..5.jpg (close-ups from the seconds before the
-violation, oldest first), <time>_<id>_card.jpg (frame, close-ups and the facts on one image) and
+the vehicle and its rider or driver), <time>_<id>_before1..5.jpg (vehicle close-ups from the seconds before the
+violation, oldest first) and <time>_<id>_before1..5_scene.jpg (the whole uncropped frame at those same moments), <time>_<id>_card.jpg (frame, close-ups and the facts on one image) and
 out/report.html (every violation with its card, for a person to review).
 With --plates, each violation also gets the number plate read (plate), "ok" or "review: why" (plate_check)
 and a close-up photo of the plate (plate_snapshot, out/snapshots/<time>_<id>_plate.jpg).
@@ -32,7 +32,7 @@ import numpy as np
 
 from light import cycle_colour, light_colour
 from logic import PCU, Monitor
-from reader import read_vehicle
+from reader import read_vehicle_best
 
 COLOUR = {"red": (0, 0, 255), "amber": (0, 200, 255), "green": (0, 200, 0), "unknown": (160, 160, 160)}
 
@@ -183,10 +183,12 @@ def main() -> None:
         for v in new:
             stem = a.out / "snapshots" / f"{v['time_s']:08.2f}_{v['track_id']}"
             box = boxes[v["track_id"]]
+            # the same vehicle (same track id) in the frames kept from before this one; frames it was not in are skipped
+            raw_before = [(f, bx[v["track_id"]]) for _, f, bx in history if v["track_id"] in bx]
             crop = None
             if readers:
-                # shortcut: reads one frame (the crossing); best-of-several-frames would read more plates
-                v["plate"], v["plate_check"], crop = read_vehicle(clean, box, *readers)
+                # read the crossing frame and the close-ups from just before it, keep the most trustworthy reading
+                v["plate"], v["plate_check"], crop = read_vehicle_best([(clean, box), *raw_before], *readers)
                 v["plate_snapshot"] = ""
                 if crop is not None:
                     v["plate_snapshot"] = f"{stem}_plate.jpg"
@@ -195,11 +197,12 @@ def main() -> None:
             cv2.imwrite(v["snapshot"], frame)
             vehicle = vehicle_crop(clean, box)
             cv2.imwrite(v["vehicle_snapshot"], vehicle)
-            # the same vehicle (same track id) in the frames kept from before this one; frames it was not in are skipped
-            before = [vehicle_crop(f, bx[v["track_id"]]) for _, f, bx in history if v["track_id"] in bx]
+            before = [vehicle_crop(f, bx) for f, bx in raw_before]
             v["before_snapshots"] = ";".join(f"{stem}_before{k + 1}.jpg" for k in range(len(before)))
+            v["before_scenes"] = ";".join(f"{stem}_before{k + 1}_scene.jpg" for k in range(len(raw_before)))
             for k, img in enumerate(before):
-                cv2.imwrite(f"{stem}_before{k + 1}.jpg", img)
+                cv2.imwrite(f"{stem}_before{k + 1}.jpg", img)                 # vehicle close-up
+                cv2.imwrite(f"{stem}_before{k + 1}_scene.jpg", raw_before[k][0])  # whole uncropped frame, same moment
             facts = [f"RED-LIGHT VIOLATION  t={v['time_s']}s  {v['class']} #{v['track_id']}  red for {v['red_for_s']}s"]
             if readers:
                 facts.append(f"plate: {v['plate_check']}"[:70])   # plate text itself: violations.csv, report.html
@@ -229,7 +232,7 @@ def main() -> None:
         for (m, cls, d), n in sorted(mon.counts.items()):
             w.writerow([m, cls, d, n, n * PCU[cls]])
     with open(a.out / "violations.csv", "w", newline="", encoding="utf-8-sig") as fh:
-        w = csv.DictWriter(fh, fieldnames=["time_s", "track_id", "class", "light", "red_for_s", "snapshot", "vehicle_snapshot", "before_snapshots", "card"]
+        w = csv.DictWriter(fh, fieldnames=["time_s", "track_id", "class", "light", "red_for_s", "snapshot", "vehicle_snapshot", "before_snapshots", "before_scenes", "card"]
                            + (["plate", "plate_check", "plate_snapshot"] if readers else []))
         w.writeheader()
         w.writerows(mon.violations)

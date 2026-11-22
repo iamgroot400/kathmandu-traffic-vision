@@ -133,6 +133,25 @@ def read_vehicle(frame, box, plates, chars, glyphs) -> tuple[str, str, object]:
     return "".join(labels), "ok" if ok else "review: " + why, crop
 
 
+def read_vehicle_best(frames_boxes, plates, chars, glyphs) -> tuple[str, str, object]:
+    """Try the same vehicle across several (frame, box) pairs (e.g. the close-ups kept from before a violation,
+    plus the crossing frame), and keep the most trustworthy reading: a passing check beats any failing one, then
+    the highest character confidence. Motion blur or a turned plate in one frame should not sink a reading that a
+    clearer nearby frame gives."""
+    best, best_key = ("", "review: no plate found", None), (False, -1.0)
+    for frame, box in frames_boxes:
+        x1, y1, x2, y2 = (int(v) for v in box[:4])
+        crop = plate_crop(frame[max(0, y1):y2, max(0, x1):x2], plates)
+        if crop is None or crop.size == 0:
+            continue
+        labels, conf = read_plate(crop, chars, glyphs)
+        ok, why = check_plate(labels, conf)
+        key = (ok, conf)
+        if key > best_key:
+            best, best_key = ("".join(labels), "ok" if ok else "review: " + why, crop), key
+    return best
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("image")
