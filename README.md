@@ -49,7 +49,7 @@ python -m venv .venv
 |---|---|
 | `counts.csv` | minute, class, direction (`in` = entering the junction), vehicles, PCU |
 | `violations.csv` | time, track id, class, signal state, seconds since red began, snapshot path; with `--plates` also plate text, `ok`/`review: why`, and the plate close-up path |
-| `snapshots/` | per violation: the frame (`<time>_<id>.jpg`), the vehicle with its rider or driver (`_vehicle.jpg`), the plate (`_plate.jpg`, with `--plates`) and an evidence card with all of them and the facts (`_card.jpg`) |
+| `snapshots/` | per violation: the frame (`<time>_<id>.jpg`), the vehicle with its rider or driver (`_vehicle.jpg`), 5 close-ups of the same vehicle from the second before the violation (`_before1..5.jpg`, oldest first; `--before N`, `--before-gap S`), the plate (`_plate.jpg`, with `--plates`) and an evidence card with all of them and the facts (`_card.jpg`) |
 | `report.html` | every violation with its evidence card, plate and plate check, for a person to review. Personal data: keep `out/` private |
 | `snapshots/*.jpg` | evidence frame for each violation, vehicle boxed |
 | `annotated.mp4` | (with `--save-video`) the video with boxes, stop line and signal state |

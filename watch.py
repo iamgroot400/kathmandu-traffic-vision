@@ -11,7 +11,8 @@ config.json:
     cycle      {"red": s, "green": s, "amber": s, "offset": s} or null, used when light_roi is null
 Writes out/counts.csv (vehicles and PCU per minute, class, direction), out/violations.csv and
 out/snapshots/<time>_<id>.jpg (evidence frame with the vehicle boxed), <time>_<id>_vehicle.jpg (close-up of
-the vehicle and its rider or driver), <time>_<id>_card.jpg (frame, close-ups and the facts on one image) and
+the vehicle and its rider or driver), <time>_<id>_before1..5.jpg (close-ups from the seconds before the
+violation, oldest first), <time>_<id>_card.jpg (frame, close-ups and the facts on one image) and
 out/report.html (every violation with its card, for a person to review).
 With --plates, each violation also gets the number plate read (plate), "ok" or "review: why" (plate_check)
 and a close-up photo of the plate (plate_snapshot, out/snapshots/<time>_<id>_plate.jpg).
@@ -23,6 +24,7 @@ import argparse
 import csv
 import html
 import json
+from collections import deque
 from pathlib import Path
 
 import cv2
@@ -55,14 +57,17 @@ def fit(img, w, h):
     return out
 
 
-def evidence_card(frame, vehicle, plate, lines):
-    """One image per violation: annotated frame on the left, vehicle and plate close-ups on the right, facts below.
+def evidence_card(frame, vehicle, plate, lines, before=()):
+    """One image per violation: annotated frame on the left, vehicle and plate close-ups on the right, a strip of the
+    close-ups taken before the violation (oldest first, at most 5), facts below.
     OpenCV cannot draw Devanagari, so the plate text is in violations.csv and report.html, not on the card."""
-    left = fit(frame, 720, 480)
-    right = np.vstack([fit(vehicle, 360, 320), fit(plate, 360, 160)])
-    card = np.vstack([np.hstack([left, right]), np.full((40 * len(lines) + 10, 1080, 3), 255, np.uint8)])
+    rows = [np.hstack([fit(frame, 720, 480), np.vstack([fit(vehicle, 360, 320), fit(plate, 360, 160)])])]
+    if before:
+        rows.append(np.hstack([fit(b, 216, 200) for b in (list(before[-5:]) + [None] * 5)[:5]]))
+    top = sum(r.shape[0] for r in rows)
+    card = np.vstack(rows + [np.full((40 * len(lines) + 10, 1080, 3), 255, np.uint8)])
     for i, t in enumerate(lines):
-        cv2.putText(card, t, (12, 480 + 35 + 40 * i), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
+        cv2.putText(card, t, (12, top + 35 + 40 * i), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
     return card
 
 
@@ -117,6 +122,8 @@ def main() -> None:
     ap.add_argument("--source", required=True, help="video file, stream URL, or camera index")
     ap.add_argument("--config", type=Path, default=Path("config.json"))
     ap.add_argument("--model", default="yolo11n.pt", help="any Ultralytics detector, e.g. results/vehicles_run1/vehicles_best.pt")
+    ap.add_argument("--before", type=int, default=5, help="close-ups kept from before each violation (0 = none)")
+    ap.add_argument("--before-gap", type=float, default=0.2, help="seconds between those close-ups")
     ap.add_argument("--grace", type=float, default=1.0, help="seconds after red begins before crossings count")
     ap.add_argument("--conf", type=float, default=0.3)
     ap.add_argument("--out", type=Path, default=Path("out"))
@@ -139,6 +146,7 @@ def main() -> None:
     cap.release()
     (a.out / "snapshots").mkdir(parents=True, exist_ok=True)
     writer = None
+    history, last_snap = deque(maxlen=a.before or 1), -1e9   # recent clean frames and their boxes, for the "before" close-ups
     readers = (YOLO(a.plates), YOLO(a.chars), YOLO(a.glyphs)) if a.plates else None
 
     det = YOLO(a.model)
@@ -160,6 +168,8 @@ def main() -> None:
                 boxes[tid] = (int(x1), int(y1), int(x2), int(y2), vehicles[c])
         new = mon.update(t, seen, tracks)
         clean = frame.copy() if new else None   # close-ups are cut before the boxes are drawn on
+        due = a.before > 0 and t - last_snap >= a.before_gap
+        pre = (clean if clean is not None else frame.copy()) if due else None
 
         light = mon.signal.state
         cv2.line(frame, line[0], line[1], COLOUR[light], 3)
@@ -185,12 +195,22 @@ def main() -> None:
             cv2.imwrite(v["snapshot"], frame)
             vehicle = vehicle_crop(clean, box)
             cv2.imwrite(v["vehicle_snapshot"], vehicle)
+            # the same vehicle (same track id) in the frames kept from before this one; frames it was not in are skipped
+            before = [vehicle_crop(f, bx[v["track_id"]]) for _, f, bx in history if v["track_id"] in bx]
+            v["before_snapshots"] = ";".join(f"{stem}_before{k + 1}.jpg" for k in range(len(before)))
+            for k, img in enumerate(before):
+                cv2.imwrite(f"{stem}_before{k + 1}.jpg", img)
             facts = [f"RED-LIGHT VIOLATION  t={v['time_s']}s  {v['class']} #{v['track_id']}  red for {v['red_for_s']}s"]
             if readers:
                 facts.append(f"plate: {v['plate_check']}"[:70])   # plate text itself: violations.csv, report.html
-            cv2.imwrite(v["card"], evidence_card(frame, vehicle, crop, facts))
+            if before:
+                facts.append(f"strip: {len(before)} close-ups from the {len(before) * a.before_gap:.1f} s before, oldest first")
+            cv2.imwrite(v["card"], evidence_card(frame, vehicle, crop, facts, before))
             print(f"VIOLATION t={v['time_s']}s {v['class']} #{v['track_id']} red for {v['red_for_s']}s"
                   + (f"  plate: {v['plate_check']}" if readers else ""))   # plate text stays out of the log
+        if pre is not None:
+            history.append((t, pre, dict(boxes)))
+            last_snap = t
         if a.save_video:
             if writer is None:
                 h, w = frame.shape[:2]
@@ -209,7 +229,7 @@ def main() -> None:
         for (m, cls, d), n in sorted(mon.counts.items()):
             w.writerow([m, cls, d, n, n * PCU[cls]])
     with open(a.out / "violations.csv", "w", newline="", encoding="utf-8-sig") as fh:
-        w = csv.DictWriter(fh, fieldnames=["time_s", "track_id", "class", "light", "red_for_s", "snapshot", "vehicle_snapshot", "card"]
+        w = csv.DictWriter(fh, fieldnames=["time_s", "track_id", "class", "light", "red_for_s", "snapshot", "vehicle_snapshot", "before_snapshots", "card"]
                            + (["plate", "plate_check", "plate_snapshot"] if readers else []))
         w.writeheader()
         w.writerows(mon.violations)
