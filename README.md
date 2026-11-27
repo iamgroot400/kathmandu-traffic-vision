@@ -5,8 +5,8 @@ three-repository project:
 
 | Repository | Contents |
 |---|---|
-| `kathmandu-traffic-docs` | Project overview, data sources, technology, roadmap |
-| `kathmandu-traffic` | Road-network simulation of the valley: signal timing, pricing and other interventions |
+| [`kathmandu-traffic-docs`](https://github.com/iamgroot400/kathmandu-traffic-docs) | Project overview, data sources, technology, roadmap |
+| [`kathmandu-traffic`](https://github.com/iamgroot400/kathmandu-traffic) | Road-network simulation of the valley: signal timing, pricing and other interventions |
 | **`kathmandu-traffic-vision`** (this one) | Vehicle detection, counting, red-light violations, number plates |
 
 ## What it does
@@ -21,15 +21,20 @@ From one fixed camera at a signalised junction:
 4. **Reads the signal** from a box drawn around the signal head (or a fixed timing cycle, or, later,
    a direct feed from the signal controller).
 5. **Flags red-light violations**: a vehicle crossing the stop line into the junction while the
-   signal has been red for longer than a grace period. Each one is saved as an evidence frame.
-6. Finds the vehicle's number plate (detector trained, run 1); reading the characters is the next step.
+   signal has been red for longer than a grace period.
+6. **Reads the plate** of each flagged vehicle: finds it, finds each character, names it, puts the
+   characters in reading order, and checks the layout and zone code. Tries the crossing frame and
+   the close-ups from the second before it, and keeps whichever reading is most trustworthy.
+7. **Saves evidence**: the frame, a vehicle close-up, a plate close-up, 5 more of each from the
+   second before, and one evidence card combining them, listed on a report page for a person to
+   review before any fine.
 
 ```
-camera frame ─► vehicle detector ─► tracker ─► stop-line crossing ─► counts (vehicles, PCU per minute)
-                                                    │
-signal state (camera box / timing cycle / controller)┴─► red-light rule ─► violation + evidence frame
-                                                                              │
-                                                       plate detector ◄───────┘ (on flagged vehicles only)
+camera frame -> vehicle detector -> tracker -> stop-line crossing -> counts (vehicles, PCU per minute)
+                                                    |
+signal state (camera box / timing cycle / controller) -> red-light rule -> violation
+                                                                              |
+                                           plate reader (best of several frames) <-- evidence card, report.html
 ```
 
 ## Quick start
@@ -51,7 +56,6 @@ python -m venv .venv
 | `violations.csv` | time, track id, class, signal state, seconds since red began, snapshot path; with `--plates` also plate text, `ok`/`review: why`, and the plate close-up path |
 | `snapshots/` | per violation: the frame (`<time>_<id>.jpg`), the vehicle with its rider or driver (`_vehicle.jpg`), 5 vehicle close-ups and 5 whole uncropped frames from the second before the violation (`_before1..5.jpg` / `_before1..5_scene.jpg`, oldest first; `--before N`, `--before-gap S`), the plate (`_plate.jpg`, with `--plates`, read from whichever of these frames gives the most trustworthy result) and an evidence card with all of them and the facts (`_card.jpg`) |
 | `report.html` | every violation with its evidence card, plate and plate check, for a person to review. Personal data: keep `out/` private |
-| `snapshots/*.jpg` | evidence frame for each violation, vehicle boxed |
 | `annotated.mp4` | (with `--save-video`) the video with boxes, stop line and signal state |
 
 `--model` takes any Ultralytics detector: the COCO-pretrained `yolo11n.pt` works out of the box; the
@@ -65,9 +69,9 @@ fine-tuned model (`vehicles_best.pt`, run 1, see [docs/training.md](docs/trainin
 | [`light.py`](light.py) | Signal colour from a box in the frame (HSV), or a fixed timing cycle |
 | [`watch.py`](watch.py) | Runs detector + tracker on a video or camera and writes the outputs |
 | [`test_logic.py`](test_logic.py) | Self-checks with fake vehicles and synthetic frames |
-| [`reader.py`](reader.py) | Plate reader: character boxes -> one label each -> text in reading order (one or two rows) |
-| [`test_reader.py`](test_reader.py) | Self-checks for the reading order (jumbled, two-row and tilted plates) |
-| [`kaggle/make_reader.py`](kaggle/make_reader.py) | Builds the plate-reader training notebook |
+| [`reader.py`](reader.py) | Plate reader: character boxes -> one label each -> text in reading order, format and zone check, the evidence card and `report.html` |
+| [`test_reader.py`](test_reader.py) | Self-checks for the reading order, the format and zone checks, and best-of-several reading |
+| [`kaggle/make_reader.py`](kaggle/make_reader.py) | Builds the plate-reader training notebooks (4 runs) |
 | [`kaggle/make_inspect.py`](kaggle/make_inspect.py) | Builds the dataset-inspection notebook |
 | [`kaggle/make_train.py`](kaggle/make_train.py) | Builds the two training notebooks (vehicles, plates) |
 
@@ -100,6 +104,7 @@ signal are never flagged: a false flag fines an innocent driver, a missed one co
 | Signal state from camera box / timing cycle | done, checked on synthetic frames |
 | Vehicle detector (South Asian traffic data) | run 1 done: mAP50 0.67-0.73 on crowded street scenes ([docs/training.md](docs/training.md)) |
 | Plate detector | run 1 done: mAP50 0.89-0.99; weak on small distant plates (mAP50-95 0.44) |
-| Plate reading (Devanagari and embossed) | run 2 done: characters found 98%; named 99% on held-out crops of known sources, but run 1 named only 64-94% on unseen sources; whole plates not yet measured |
+| Plate reading (Devanagari and embossed) | run 4 done: whole plate exact 43.8%, 88.7% exact when it passes its own check (112 real test plates, AI-read labels, so provisional) |
+| Evidence system | done: vehicle and plate close-ups, 5 more of each from the second before, best-of-several reading, evidence card, `report.html` |
 | Test on real Kathmandu junction footage | **needs footage**: no open Kathmandu junction video exists |
 | Restricted-vehicle rule (trucks on inner roads) | planned |
