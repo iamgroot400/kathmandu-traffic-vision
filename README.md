@@ -6,7 +6,7 @@ three-repository project:
 | Repository | Contents |
 |---|---|
 | [`kathmandu-traffic-docs`](https://github.com/iamgroot400/kathmandu-traffic-docs) | Project overview, data sources, technology, roadmap |
-| [`kathmandu-traffic`](https://github.com/iamgroot400/kathmandu-traffic) | Road-network simulation of the valley: signal timing, pricing and other interventions |
+| [`kathmandu-traffic-simulation`](https://github.com/iamgroot400/kathmandu-traffic-simulation) | Road-network simulation of the valley: signal timing, pricing and other interventions |
 | **`kathmandu-traffic-vision`** (this one) | Vehicle detection, counting, red-light violations, number plates |
 
 ## What it does
